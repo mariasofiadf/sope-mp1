@@ -1,3 +1,5 @@
-#Ignores the binary file
+#Ignores binary files
 *
+
+#Ignores .txt files
 .txt
