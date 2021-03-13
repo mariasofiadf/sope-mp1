@@ -19,6 +19,7 @@ void xmod(const char *pathname, mode_t mode){
     chmod(pathname, mode);
 }
 
+///Assembles modeInfo struct
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo){
 
     printf("Assemblying Mode Info\n");
@@ -51,30 +52,32 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo){
         default: break;
     }
 
-    //Checks for Read Permissions
+    //Check for Read Permissions
     switch (modeChar[2])
     {
         case 'r': modeInfo->read = 1;
         default: break;
     }
 
-    //Checks for Write Permissions
+    //Check for Write Permissions
     switch (modeChar[3])
     {
         case 'w': modeInfo->write = 1;
         default: break;
     }
 
-    //Checks for Execute Permissions
+    //Check for Execute Permissions
     switch (modeChar[4])
     {
         case 'x': modeInfo->execute = 1;
         default: break;
     }
 
-    return 1;
+    return 0;
 }
 
+
+///Assembles mode_t when user = OWNER
 void assembleModeTOwner(struct modeInfo * modeInfo, mode_t* mode){
 
     printf("Assembly Owner\n");
@@ -97,6 +100,7 @@ void assembleModeTOwner(struct modeInfo * modeInfo, mode_t* mode){
 }
 
 
+///Assembles mode_t when user = GROUP
 void assembleModeTGroup(struct modeInfo * modeInfo, mode_t* mode){
 
     printf("Assembly Group\n");
@@ -119,6 +123,7 @@ void assembleModeTGroup(struct modeInfo * modeInfo, mode_t* mode){
 }
 
 
+///Assembles mode_t when user = OTHERS
 void assembleModeTOthers(struct modeInfo * modeInfo, mode_t* mode){
     printf("Assembly Others\n");
     switch (modeInfo->symbol)
@@ -140,7 +145,7 @@ void assembleModeTOthers(struct modeInfo * modeInfo, mode_t* mode){
 }
 
 
-
+///Assembles mode_t when user = ALL
 void assembleModeTAll(struct modeInfo * modeInfo, mode_t* mode){
     printf("Assembly All\n");
     switch (modeInfo->symbol)
@@ -165,6 +170,12 @@ void assembleModeTAll(struct modeInfo * modeInfo, mode_t* mode){
 
 
 ///Assembles mode_t
+///
+///Calls one of the following: 
+///assembleModeTOwner
+///assembleModeTGroup
+///assembleModeTOthers
+///assembleModeTAll
 void assembleModeT(struct modeInfo * modeInfo, mode_t* mode){
     switch (modeInfo->user)
     {
