@@ -1,5 +1,3 @@
-#Ignores binary files
-*
-
-#Ignores .txt files
-.txt
+*.txt
+.vscode/
+xmod

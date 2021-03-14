@@ -1,28 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
+
 #include <string.h>
-
-enum user { OWNER, GROUP, OTHERS, ALL};
-enum symbol {RM, ADD, SUBST};
-enum permission {READ, WRITE, EXECUTE};
-
-struct modeInfo{
-    enum user user;
-    enum symbol symbol;
-    u_int8_t read;
-    u_int8_t write;
-    u_int8_t execute;
-};
+#include "mode_t_aux.h"
 
 void xmod(const char *pathname, mode_t mode){
     chmod(pathname, mode);
 }
 
 ///Assembles modeInfo struct
-int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo){
+int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
     printf("Assemblying Mode Info\n");
+    char user = modeChar[0], symbol = modeChar[1];
 
     if(modeChar == NULL) {
         printf("Error: modeChar is NULL!");
@@ -34,139 +22,59 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo){
     }
 
     //Set User
-    switch (modeChar[0])
+    switch (user)
     {
-    case 'u': modeInfo->user = OWNER; break;
-    case 'g': modeInfo->user = GROUP; break;
-    case 'o': modeInfo->user = OTHERS; break;
-    case 'a': modeInfo->user = ALL; break;
-    default: break;
+        case 'u': modeInfo->user = OWNER; break;
+        case 'g': modeInfo->user = GROUP; break;
+        case 'o': modeInfo->user = OTHERS; break;
+        case 'a': modeInfo->user = ALL; break;
+        default: 
+            fprintf( stderr, "assembleModeInfo: Invalid user %c", user);
+            break;
     }
 
     //Set Symbol
-    switch (modeChar[1])
+    switch (symbol)
     {
         case '+': modeInfo->symbol = ADD; break;
         case '-': modeInfo->symbol = RM; break;
         case '=': modeInfo->symbol = SUBST; break;
-        default: break;
+        default: 
+            fprintf( stderr, "assembleModeInfo: Invalid symbol %c", symbol);
+            break;
     }
 
-    //Check for Read Permissions
-    switch (modeChar[2])
-    {
-        case 'r': modeInfo->read = 1;
-        default: break;
-    }
+    //HAVE TO VERIFY THAT THE ORDER IS CORRECT
+    int i= 2;
 
-    //Check for Write Permissions
-    switch (modeChar[3])
-    {
-        case 'w': modeInfo->write = 1;
-        default: break;
+    //remove previous permissions
+    if(modeInfo->symbol ==  SUBST){
+        *mode = mode_rm(*mode, user, WRITE);
+        *mode = mode_rm(*mode, user, READ);
+        *mode = mode_rm(*mode, user, EXECUTE);
     }
-
-    //Check for Execute Permissions
-    switch (modeChar[4])
-    {
-        case 'x': modeInfo->execute = 1;
-        default: break;
+    while(modeChar[i] != 0){ //not sure is the right condition
+        switch (modeChar[i++])
+		{
+		case 'r':
+			*mode = change_perm(*mode, modeInfo->user, READ, modeInfo->symbol);
+			break;
+		case 'w':
+			*mode = change_perm(*mode, modeInfo->user, WRITE, modeInfo->symbol);
+			break;
+		case 'x':
+			*mode = change_perm(*mode, modeInfo->user, EXECUTE, modeInfo->symbol);
+			break;
+		default:
+			return 1;
+		}
     }
 
     return 0;
 }
 
 
-///Assembles mode_t when user = OWNER
-void assembleModeTOwner(struct modeInfo * modeInfo, mode_t* mode){
 
-    printf("Assembly Owner\n");
-    switch (modeInfo->symbol)
-    {
-        case ADD: 
-            //TODO
-            break;
-        case RM: 
-            //TODO
-            break;
-        case SUBST:
-            if(modeInfo->read)  *mode = *mode | S_IRUSR;
-            if(modeInfo->write) *mode = *mode | S_IWUSR;
-            if(modeInfo->execute) *mode = *mode | S_IXUSR;
-            break;
-        default:
-        break;
-    }
-}
-
-
-///Assembles mode_t when user = GROUP
-void assembleModeTGroup(struct modeInfo * modeInfo, mode_t* mode){
-
-    printf("Assembly Group\n");
-    switch (modeInfo->symbol)
-    {
-        case ADD: 
-            //TODO
-            break;
-        case RM: 
-            //TODO
-            break;
-        case SUBST:
-            if(modeInfo->read)  *mode = *mode | S_IRGRP;
-            if(modeInfo->write) *mode = *mode | S_IWGRP;
-            if(modeInfo->execute) *mode = *mode | S_IXGRP;
-            break;
-        default:
-        break;
-    }
-}
-
-
-///Assembles mode_t when user = OTHERS
-void assembleModeTOthers(struct modeInfo * modeInfo, mode_t* mode){
-    printf("Assembly Others\n");
-    switch (modeInfo->symbol)
-    {
-        case ADD: 
-            //TODO
-            break;
-        case RM: 
-            //TODO
-            break;
-        case SUBST:
-            if(modeInfo->read)  *mode = *mode | S_IROTH;
-            if(modeInfo->write) *mode = *mode | S_IWOTH;
-            if(modeInfo->execute) *mode = *mode | S_IXOTH;
-            break;
-        default:
-        break;
-    }
-}
-
-
-///Assembles mode_t when user = ALL
-void assembleModeTAll(struct modeInfo * modeInfo, mode_t* mode){
-    printf("Assembly All\n");
-    switch (modeInfo->symbol)
-    {
-        case ADD: 
-            //TODO
-            break;
-        case RM: 
-            //TODO
-            break;
-        case SUBST:
-            if(modeInfo->read)  *mode = *mode | S_IRUSR | S_IRGRP | S_IROTH;
-            printf("mode_t: %o\n", *mode);
-            if(modeInfo->write) *mode = *mode | S_IWUSR | S_IWGRP |S_IWOTH;
-            printf("mode_t: %o\n", *mode);
-            if(modeInfo->execute) *mode = *mode | S_IXUSR | S_IXGRP | S_IXOTH;
-            printf("mode_t: %o\n", *mode);
-        default:
-        break;
-    }
-}
 
 
 ///Assembles mode_t
@@ -176,7 +84,7 @@ void assembleModeTAll(struct modeInfo * modeInfo, mode_t* mode){
 ///assembleModeTGroup
 ///assembleModeTOthers
 ///assembleModeTAll
-void assembleModeT(struct modeInfo * modeInfo, mode_t* mode){
+/*void assembleModeT(struct modeInfo * modeInfo, mode_t* mode){
     switch (modeInfo->user)
     {
         case OWNER: assembleModeTOwner(modeInfo, mode); break;
@@ -186,12 +94,21 @@ void assembleModeT(struct modeInfo * modeInfo, mode_t* mode){
         default: break;
     }
 }
+*/
 
 int main(int argc, char** argv){
-    if(argc < 2) return 1;
-    mode_t mode = 0;
+ 
+    if(argc < 2) return 1;    
+    struct stat fileStat;
+    
+    
     char* modeChar = argv[1], *pathname = argv[2];
 
+    if(stat(pathname, &fileStat) < 0)    
+        return 1;
+
+    mode_t mode = fileStat.st_mode;
+    printf("Initial mode_t: %o\n", mode);
     if(modeChar[0] == '0'){
         mode = strtol(argv[1],0,8);
     }
@@ -199,19 +116,9 @@ int main(int argc, char** argv){
     {
         printf("Entered else\n");
         struct modeInfo modeInfo;
-        assembleModeInfo(modeChar, &modeInfo);
-        /*
-        Para confirmar que o modeInfo está a ser inicializado corretamente. Está!
-        printf("modeInfo->user: %d\n", modeInfo.user);
-        printf("modeInfo->symbol: %d\n", modeInfo.symbol);
-        printf("modeInfo->read: %d\n", modeInfo.read);
-        printf("modeInfo->write: %d\n", modeInfo.write);
-        printf("modeInfo->execute: %d\n", modeInfo.execute);
-        */
-        assembleModeT(&modeInfo, &mode);
-        printf("mode_t: %o\n", mode);
+        assembleModeInfo(modeChar, &modeInfo, &mode);
+        printf("Final mode_t: %o\n", mode);
     }
-
     xmod(pathname, mode);
     return 0;
 }
