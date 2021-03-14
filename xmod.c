@@ -1,6 +1,6 @@
 
 #include <string.h>
-#include "mode_t_aux.h"
+#include "./mode_t_aux.h"
 
 void xmod(const char *pathname, mode_t mode){
     chmod(pathname, mode);
@@ -74,41 +74,17 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 }
 
 
-
-
-
-///Assembles mode_t
-///
-///Calls one of the following: 
-///assembleModeTOwner
-///assembleModeTGroup
-///assembleModeTOthers
-///assembleModeTAll
-/*void assembleModeT(struct modeInfo * modeInfo, mode_t* mode){
-    switch (modeInfo->user)
-    {
-        case OWNER: assembleModeTOwner(modeInfo, mode); break;
-        case GROUP: assembleModeTGroup(modeInfo, mode); break; 
-        case OTHERS: assembleModeTOthers(modeInfo, mode); break;
-        case ALL: assembleModeTAll(modeInfo, mode); break;
-        default: break;
-    }
-}
-*/
-
 int main(int argc, char** argv){
- 
     if(argc < 2) return 1;    
-    struct stat fileStat;
-    
-    
+    struct stat fileStat; 
     char* modeChar = argv[1], *pathname = argv[2];
 
     if(stat(pathname, &fileStat) < 0)    
         return 1;
 
     mode_t mode = fileStat.st_mode;
-    printf("Initial mode_t: %o\n", mode);
+    //printf("Initial mode_t: %o\n", mode);
+
     if(modeChar[0] == '0'){
         mode = strtol(argv[1],0,8);
     }
