@@ -2,6 +2,9 @@
 #include <string.h>
 #include "mode_t_aux.h"
 
+static int nftot = 0, nfmod = 0;
+char* pathname = NULL;
+
 void xmod(const char *pathname, mode_t mode){
     chmod(pathname, mode);
 }
@@ -49,10 +52,15 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
     //remove previous permissions
     if(modeInfo->symbol ==  SUBST){
-        *mode = mode_rm(*mode, user, WRITE);
-        *mode = mode_rm(*mode, user, READ);
-        *mode = mode_rm(*mode, user, EXECUTE);
+        if(modeInfo->user == ALL)
+            *mode &= 0x111000;
+        else{
+            *mode = mode_rm(*mode, modeInfo->user, WRITE);
+            *mode = mode_rm(*mode,  modeInfo->user, READ);
+            *mode = mode_rm(*mode,  modeInfo->user, EXECUTE);
+        }
     }
+
     while(modeChar[i] != 0){ //not sure is the right condition
         switch (modeChar[i++])
 		{
@@ -96,13 +104,44 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 }
 */
 
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
+
+void print_process_info(){
+    int pid = getpid();
+    fprintf(stderr, "\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
+    fprintf(stderr, "Do you want to terminate the program? (Y/N)\n");
+    if(getc(stdin) == 'Y')
+        exit(0);
+}
+
+void set_sig_action(){
+	struct sigaction new, old;
+	sigset_t smask;
+			// defines signals to block while func() is running
+
+		// prepare struct sigaction
+	if (sigemptyset(&smask)==-1)	// block no signal
+		perror ("sigsetfunctions");
+
+	new.sa_handler = print_process_info;
+	new.sa_mask = smask;
+	new.sa_flags = 0;	// usually works
+
+	if(sigaction(SIGINT, &new, &old) == -1)
+		perror ("sigaction");
+}
+
+
 int main(int argc, char** argv){
+    set_sig_action();
  
     if(argc < 2) return 1;    
     struct stat fileStat;
     
-    
-    char* modeChar = argv[1], *pathname = argv[2];
+    char* modeChar = argv[1]; pathname = argv[2];
 
     if(stat(pathname, &fileStat) < 0)    
         return 1;
