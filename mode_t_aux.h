@@ -1,5 +1,5 @@
-#ifndef MODE_T_AUX
-#define MODE_T_AUX
+#ifndef MODE_T_AUX_H_
+#define MODE_T_AUX_H_
 
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -30,4 +30,4 @@ mode_t change_perm(mode_t mode, enum user user, enum permission perm, enum symbo
 
 
 
-#endif
+#endif  //MODE_T_AUX_H_

@@ -1,4 +1,4 @@
-#include "mode_t_aux.h"
+#include "./mode_t_aux.h"
 
 mode_t get_mask(enum user user, enum permission perm) {
 
@@ -34,7 +34,6 @@ mode_t change_perm(mode_t mode, enum user user, enum permission perm, enum symbo
     case RM:
         return mode_rm(mode, user, perm);
     case SUBST:
-        //TODO
         
         return mode_add(mode, user, perm);
     default:

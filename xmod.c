@@ -90,11 +90,13 @@ int main(int argc, char** argv){
     
     char* modeChar = argv[1]; pathname = argv[2];
 
+
     if(stat(pathname, &fileStat) < 0)    
         return 1;
 
     mode_t mode = fileStat.st_mode;
-    printf("Initial mode_t: %o\n", mode);
+    //printf("Initial mode_t: %o\n", mode);
+
     if(modeChar[0] == '0'){
         mode = strtol(argv[1],0,8);
     }
