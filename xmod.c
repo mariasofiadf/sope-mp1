@@ -1,6 +1,6 @@
 #include <string.h>
-#include "mode_t_aux.h"
-#include "signal_aux.h"
+#include "./mode_t_aux.h"
+#include "./signal_aux.h"
 
 extern unsigned int nftot, nfmod;
 extern char* pathname;
@@ -54,7 +54,8 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
     if(modeInfo->symbol ==  SUBST){
         if(modeInfo->user == ALL)
             *mode &= 0x111000;
-        else{
+        else
+        {
             *mode = mode_rm(*mode, modeInfo->user, WRITE);
             *mode = mode_rm(*mode,  modeInfo->user, READ);
             *mode = mode_rm(*mode,  modeInfo->user, EXECUTE);

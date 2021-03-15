@@ -1,4 +1,4 @@
-#include "signal_aux.h"
+#include "./signal_aux.h"
 
 char* pathname = NULL;
 unsigned int nftot = 0, nfmod = 0;
