@@ -1,9 +1,9 @@
-
 #include <string.h>
 #include "mode_t_aux.h"
+#include "signal_aux.h"
 
-static int nftot = 0, nfmod = 0;
-char* pathname = NULL;
+extern unsigned int nftot, nfmod;
+extern char* pathname;
 
 void xmod(const char *pathname, mode_t mode){
     chmod(pathname, mode);
@@ -82,59 +82,6 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 }
 
 
-
-
-
-///Assembles mode_t
-///
-///Calls one of the following: 
-///assembleModeTOwner
-///assembleModeTGroup
-///assembleModeTOthers
-///assembleModeTAll
-/*void assembleModeT(struct modeInfo * modeInfo, mode_t* mode){
-    switch (modeInfo->user)
-    {
-        case OWNER: assembleModeTOwner(modeInfo, mode); break;
-        case GROUP: assembleModeTGroup(modeInfo, mode); break; 
-        case OTHERS: assembleModeTOthers(modeInfo, mode); break;
-        case ALL: assembleModeTAll(modeInfo, mode); break;
-        default: break;
-    }
-}
-*/
-
-
-#include <sys/types.h>
-#include <unistd.h>
-#include <signal.h>
-
-void print_process_info(){
-    int pid = getpid();
-    fprintf(stderr, "\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
-    fprintf(stderr, "Do you want to terminate the program? (Y/N)\n");
-    if(getc(stdin) == 'Y')
-        exit(0);
-}
-
-void set_sig_action(){
-	struct sigaction new, old;
-	sigset_t smask;
-			// defines signals to block while func() is running
-
-		// prepare struct sigaction
-	if (sigemptyset(&smask)==-1)	// block no signal
-		perror ("sigsetfunctions");
-
-	new.sa_handler = print_process_info;
-	new.sa_mask = smask;
-	new.sa_flags = 0;	// usually works
-
-	if(sigaction(SIGINT, &new, &old) == -1)
-		perror ("sigaction");
-}
-
-
 int main(int argc, char** argv){
     set_sig_action();
  
@@ -159,5 +106,7 @@ int main(int argc, char** argv){
         printf("Final mode_t: %o\n", mode);
     }
     xmod(pathname, mode);
+    //pause(); Descomentando esta linha o program vai esperar por um sinal. Clicando Ctrl+C ele chama a função print_process_info() de signal_aux.c
     return 0;
 }
+
