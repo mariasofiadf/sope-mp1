@@ -66,13 +66,33 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
         switch (modeChar[i++])
 		{
 		case 'r':
-			*mode = change_perm(*mode, modeInfo->user, READ, modeInfo->symbol);
+            if(!(modeInfo->read || modeInfo->execute || modeInfo->write)){
+                //printf("All good read!\n");
+                modeInfo->read = 1;
+                *mode = change_perm(*mode, modeInfo->user, READ, modeInfo->symbol);
+            }else{
+                printf( "Error: wrong permission input\n");
+            }
+			
 			break;
 		case 'w':
-			*mode = change_perm(*mode, modeInfo->user, WRITE, modeInfo->symbol);
+            if(!(modeInfo->execute || modeInfo->write)){
+                //printf("All good write!\n");
+                *mode = change_perm(*mode, modeInfo->user, WRITE, modeInfo->symbol);
+                modeInfo->write = 1;
+            }else{
+                fprintf( stderr, "Error: wrong permission input\n");
+            }	
 			break;
 		case 'x':
-			*mode = change_perm(*mode, modeInfo->user, EXECUTE, modeInfo->symbol);
+            if(!modeInfo->execute){
+                //printf("All good execute!\n");
+                *mode = change_perm(*mode, modeInfo->user, EXECUTE, modeInfo->symbol);
+                modeInfo->execute = 1;
+            }else{
+                fprintf( stderr, "Error: wrong permission input\n");
+            }
+			
 			break;
 		default:
 			return 1;
