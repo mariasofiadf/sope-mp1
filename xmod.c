@@ -104,12 +104,18 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
 
 int main(int argc, char** argv){
+    printf("%i\n",argc);
+    printf("%s\n",argv[1]);
+    if (argv[1] == "-R") {
+        printf("%s\n",argv[1]);
+    }
+
     set_sig_action();
  
     if(argc < 2) return 1;    
     struct stat fileStat;
     
-    char* modeChar = argv[1]; pathname = argv[2];
+    char* modeChar = argv[argc- 2]; pathname = argv[argc- 1];
 
 
     if(stat(pathname, &fileStat) < 0)    
@@ -119,7 +125,7 @@ int main(int argc, char** argv){
     //printf("Initial mode_t: %o\n", mode);
 
     if(modeChar[0] == '0'){
-        mode = strtol(argv[1],0,8);
+        mode = strtol(argv[argc- 2],0,8);
     }
     else
     {
