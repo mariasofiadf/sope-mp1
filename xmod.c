@@ -1,6 +1,5 @@
 #include <string.h>
 #include "./mode_t_aux.h"
-#include "./signal_aux.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/types.h>
@@ -10,14 +9,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-extern unsigned int nftot, nfmod;
-extern char* pathname;
+unsigned int nftot = 0, nfmod = 0;
+char* pathname = NULL;
 
-void xmod(const char *pathname, mode_t mode){
-    chmod(pathname, mode);
-}
-
-///Assembles modeInfo struct
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
     //printf("Assemblying Mode Info\n");
@@ -90,6 +84,27 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
     return 0;
 }
 
+void xmod(const char *pathname, mode_t * mode, char* modeStr){
+
+    printf("PID:%d Current pathname: %s\n", getpid(), pathname);
+    char first = modeStr[0];
+
+    if(first == '0'){
+        *mode = strtol(modeStr,0,8);
+    }
+    else
+    {
+        //printf("Entered else\n");
+        struct modeInfo modeInfo;
+        assembleModeInfo(modeStr, &modeInfo, mode);
+        //printf("Final mode_t: %o\n", mode);
+    }
+
+    chmod(pathname, *mode);
+}
+
+///Assembles modeInfo struct
+
 int is_regular_file(const char *pathname) {
     //printf("IsRegFile");
     struct stat sb;
@@ -99,65 +114,17 @@ int is_regular_file(const char *pathname) {
     return 1;
 }
 
-/*
-void recursive_func(int argc, char** argv) {
-    struct stat fileStat;
-    mode_t mode;
-    char** argv2;
-    char* modeChar = argv[argc- 2]; pathname = argv[argc- 1];
-    char path[1000];
-    struct dirent *dp;
-    DIR *dir = opendir(pathname);
-    while ((dp = readdir(dir)) != NULL)
-    {
-        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
-            {
-                strcpy(path, pathname);
-                strcat(path, "/");
-                strcat(path, dp->d_name);
-                printf("%s   %i\n",path ,is_regular_file(path));
-                if(stat(path, &fileStat) < 0) {
-
-                }
-                mode = fileStat.st_mode;
-                if(modeChar[0] == '0'){
-                    mode = strtol(path,0,8);
-                }
-                else
-                {
-                    //printf("Entered else\n");
-                    struct modeInfo modeInfo;
-                    assembleModeInfo(modeChar, &modeInfo, &mode);
-                    //printf("Final mode_t: %o\n", mode);
-                }
-                xmod(path, mode);
-                if (is_regular_file(path) != 0) {
-                    printf("FOUND A PASTA \n");
-
-                    
-                    if (fork() == 0) {
-                        argv2 = argv;
-                        argv2[argc- 1] = pathname;
-                        execv("./xmod", argv2);
-                    } 
-
-                }               
-            }
-            
-    }
-    closedir(dir);
-}
-*/
-
-void recursive_step(char* pathname, mode_t mode, int argc, char** argv){
+void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
+    char* modeStr= argv[argc - 2];
     if(is_regular_file(pathname)){
         //printf("Current pathname: %s\n", pathname);
-        xmod(pathname, mode);
+        xmod(pathname, mode, modeStr);
         return;
     }
     else
     {
-        xmod(pathname, mode);
+        if(getpgrp() != getpid()) //Only children enter here
+            xmod(pathname, mode, modeStr);
         DIR *dir = opendir(pathname); 
         char next_pathname[256];
         struct dirent *dp;
@@ -174,7 +141,7 @@ void recursive_step(char* pathname, mode_t mode, int argc, char** argv){
             {
             case 0:
                 // Child
-                printf("I'm a new process: %d\n", getpid());
+                //printf("I'm a new process: %d\n", getpid());
                 execv("./xmod", argv);
                 break;
             case -1:
@@ -183,7 +150,7 @@ void recursive_step(char* pathname, mode_t mode, int argc, char** argv){
                 break;
             default: 
                 //Parent
-                printf("I'm the parent: %d\n", getpid());
+                //printf("I'm the parent: %d\n", getpid());
                 wait(NULL);
                 break;
             }
@@ -193,44 +160,54 @@ void recursive_step(char* pathname, mode_t mode, int argc, char** argv){
     }
 }
 
+void print_process_info(){
+    int pid = getpid();
+    fprintf(stderr, "\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
+    fprintf(stderr, "Do you want to terminate the program? (Y/N)\n");
+    if(getc(stdin) == 'Y')
+        exit(0);
+}
+
+void set_sig_action(){
+	struct sigaction new, old;
+	sigset_t smask;
+			// defines signals to block while func() is running
+
+		// prepare struct sigaction
+	if (sigemptyset(&smask)==-1)	// block no signal
+		perror ("sigsetfunctions");
+
+	new.sa_handler = print_process_info;
+	new.sa_mask = smask;
+	new.sa_flags = 0;	// usually works
+
+	if(sigaction(SIGINT, &new, &old) == -1)
+		perror ("sigaction");
+}
+
 int main(int argc, char** argv){
     set_sig_action();
     
-    if(argc < 2) return 1;    
+    if(argc < 2) return 1;
     struct stat fileStat;
     
-    char* modeChar = argv[argc- 2]; pathname = argv[argc - 1];
-
-    printf("PID:%d Current pathname: %s\n", getpid(), pathname);
+    char* modeChar = argv[argc - 2]; pathname = argv[argc - 1];
+    char* option = (argv[argc - 3]);
+    //printf("PID:%d Current pathname: %s\n", getpid(), pathname);
 
     if(stat(pathname, &fileStat) < 0)    
         return 1;
 
     mode_t mode = fileStat.st_mode;
-
     char mode_R = 45;
-    
-    //printf("Initial mode_t: %o\n", mode);
 
-    if(modeChar[0] == '0'){
-        mode = strtol(argv[argc- 2],0,8);
-    }
-    else
-    {
-        //printf("Entered else\n");
-        struct modeInfo modeInfo;
-        assembleModeInfo(modeChar, &modeInfo, &mode);
-        //printf("Final mode_t: %o\n", mode);
-    }
-    if (*(argv[argc - 3]) == mode_R) {
+    if(getpgrp() == getpid())//First process
+        xmod(pathname, &mode, modeChar);
+    if(*option == mode_R){
         //printf("%s   %i\n",pathname ,is_regular_file(pathname));
         //recursive_func(argc,argv);
-        recursive_step(pathname, mode, argc, argv);
+        recursive_step(pathname, &mode, argc, argv);    
     }
-    else{
-        xmod(pathname, mode);
-    }
-
 
     //pause(); // Descomentando esta linha o program vai esperar por um sinal. Clicando Ctrl+C ele chama a função print_process_info() de signal_aux.c
     return 0;
