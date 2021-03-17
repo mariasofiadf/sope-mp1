@@ -2,7 +2,6 @@
 #define MODE_T_AUX_H_
 
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <stdio.h>
 
 enum user { OWNER, GROUP, OTHERS, ALL};

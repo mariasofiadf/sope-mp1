@@ -18,8 +18,7 @@ printf("First process: group: %d ; pid: %d\n", getpgrp(), getpid());
 ret = fork();
 if (ret == -1) {
 	perror ("1st fork()");
-	}
-else if (ret == 0) {	// child
+} else if (ret == 0) {	// child
 	printf("\tChild initially: group: %d ; pid: %d\n", getpgrp(), getpid());
 	if (setpgid(0, 0) == -1) {
 		perror("setpgid");
@@ -29,18 +28,15 @@ else if (ret == 0) {	// child
 	int r = fork();
 	if (r == -1) {
 		perror ("2nd fork()");
-		}
-	else if (r == 0) {	// grand child
+	} else if (r == 0) {	// grand child
 		printf("\t\tGrand child: group: %d ; pid: %d\n", getpgrp(), getpid());
-		}
-	else {	// child
+	} else {	// child
 		pid_t pid = wait(NULL);
 		int grp = getpgid(pid);
 		if (grp == -1) perror("\tgetpgid");
 		printf("\tGrand child has finished. Group: %d ; pid: %d\n", grp, pid);
 		}
-	}
-else {	// parent
+} else {	// parent
 	pid_t pid = wait(NULL);
 	printf("Child has finished. Group: %d ; pid: %d\n", getpgid(pid), pid);
 	}

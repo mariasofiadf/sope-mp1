@@ -1,0 +1,49 @@
+[6473][      debug] Loading models took 36.418ms
+[6475][      debug] Sqlite write daemon: starting up
+[6475][      debug] Sqlite write daemon: set up complete, waiting for connections
+[6473][environment] CWD = /home/pedro/Desktop/FEUP/2Ano/SOPE/sope-mp1
+[6473][environment] No .inferconfig file found
+[6473][environment] Project root = /home/pedro/Desktop/FEUP/2Ano/SOPE/sope-mp1
+[6473][environment] INFER_ARGS =   @/tmp/args.tmp.dd4edb
+[6473][environment] command line arguments:   infer run -- make
+[6473][environment] Available memory at startup: 2815 MB
+[6473][environment] Active checkers: self-in-block (C/C++/ObjC), starvation (C/C++/ObjC, Java), uninit (C/C++/ObjC), siof (C/C++/ObjC), racerd (C/C++/ObjC, Java), liveness (C/C++/ObjC), inefficient-keyset-iterator (Java), fragment-retains-view (Java), biabduction (C/C++/ObjC, Java)
+[6473][environment] Scheduler: file
+[6473][environment] Cores used: 4
+[6473][environment] Infer version v1.0.0
+[6473][environment] Copyright 2009 - present Facebook. All Rights Reserved.
+[6473][environment] 
+[6473][   progress] Capturing in make/cc mode...
+[6473][environment] Running command make with env:
+[6473][environment] (Extend((PATH /opt/infer-linux64-v1.0.0/lib/infer/infer/bin/../lib/wrappers:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin)(INFER_OLD_PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin)))
+[6473][environment] 
+
+[6477][environment] CWD = /home/pedro/Desktop/FEUP/2Ano/SOPE/sope-mp1
+[6477][environment] No .inferconfig file found
+[6477][environment] Project root = /home/pedro/Desktop/FEUP/2Ano/SOPE/sope-mp1
+[6477][environment] INFER_ARGS =   @/tmp/args.tmp.1912b8
+[6477][environment] command line arguments:   gcc -Wall -o xmod xmod.c mode_t_aux.c
+[6477][environment] Available memory at startup: 2780 MB
+[6477][environment] Active checkers: self-in-block (C/C++/ObjC), starvation (C/C++/ObjC, Java), uninit (C/C++/ObjC), siof (C/C++/ObjC), racerd (C/C++/ObjC, Java), liveness (C/C++/ObjC), inefficient-keyset-iterator (Java), fragment-retains-view (Java), biabduction (C/C++/ObjC, Java)
+[6477][      debug] WARNING: `clang -### <args>` returned an empty set of commands to run and no error. Will run the original command directly:
+[6477][      debug]   /opt/infer-linux64-v1.0.0/lib/infer/infer/bin/../../facebook-clang-plugins/clang/install/bin/clang -Wall -o xmod xmod.c mode_t_aux.c
+[6477][      debug] 
+[6477][ extern err] Error executing:   /opt/infer-linux64-v1.0.0/lib/infer/infer/bin/../../facebook-clang-plugins/clang/install/bin/clang
+                   -Wall -o xmod xmod.c mode_t_aux.c
+exited with code 127
+
+[6477][ extern err] Raised at Stdlib.input_line.scan in file "stdlib.ml", line 449, characters 14-31
+Called from Stdio__In_channel.input_line_exn in file "src/in_channel.ml" (inlined), line 68, characters 13-30
+Called from IBase__Utils.with_channel_in in file "src/base/Utils.ml", line 252, characters 11-44
+
+[6477][environment] Scheduler: file
+[6477][environment] Cores used: 4
+[6477][environment] [6473][ extern err] *** capture command failed:
+*** make
+*** exited with code 2
+
+[6473][ extern err] Raised at Stdlib__scanf.bad_input in file "scanf.ml" (inlined), line 444, characters 18-40
+Called from Stdlib__scanf.scanf_bad_input in file "scanf.ml", line 1164, characters 4-75
+Called from IBase__Utils.get_available_memory_MB.scan_for_expected_output in file "src/base/Utils.ml", line 439, characters 10-86
+
+[6475][      debug] Sqlite write daemon: terminating

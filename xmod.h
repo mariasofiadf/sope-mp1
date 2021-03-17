@@ -1,16 +1,14 @@
 #ifndef XMOD_H_
 #define XMOD_H_
 
-#include <string.h>
-#include "./mode_t_aux.h"
-#include <stdio.h>
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "./mode_t_aux.h"
 
 unsigned int nftot = 0, nfmod = 0;
 char* pathname = NULL;
