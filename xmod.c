@@ -1,16 +1,6 @@
-#include <string.h>
-#include "./mode_t_aux.h"
-#include <stdio.h>
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include "./xmod.h"
 
-unsigned int nftot = 0, nfmod = 0;
-char* pathname = NULL;
+
 
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
