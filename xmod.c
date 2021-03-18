@@ -182,7 +182,15 @@ int main(int argc, char** argv){
     struct stat fileStat;
     
     char* modeStr = argv[argc - 2]; pathname = argv[argc - 1];
-    char* option = (argv[argc - 3]);
+    char* option1 = (argv[argc - 3]);
+    char* option2 = malloc(sizeof(char) * 1024);
+    char* option3 = malloc(sizeof(char) * 1024);
+    if (argc == 5) {
+        option2 = (argv[argc - 4]);
+    } else if (argc == 6) {
+        option2 = (argv[argc - 4]);
+        option3 = (argv[argc - 5]);
+    }
     //printf("PID:%d Current pathname: %s\n", getpid(), pathname);
 
     if(stat(pathname, &fileStat) < 0)    
@@ -192,8 +200,8 @@ int main(int argc, char** argv){
     char mode_R = 45;
 
     if(getpgrp() == getpid())//First process
-        xmod(pathname, &mode, modeStr);
-    if(*option == mode_R){
+        xmod(pathname, &mode, modeStr);;
+    if((*option3 == mode_R) || (*option2 == mode_R) || (*option1 == mode_R)){
         //printf("%s   %i\n",pathname ,is_regular_file(pathname));
         //recursive_func(argc,argv);
         recursive_step(pathname, &mode, argc, argv);    
