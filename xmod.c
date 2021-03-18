@@ -1,7 +1,5 @@
 #include "./xmod.h"
 
-
-
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
     //printf("Assemblying Mode Info\n");
@@ -141,21 +139,34 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
             default: 
                 //Parent
                 //printf("I'm the parent: %d\n", getpid());
+                //writeLog(PROC_CREAT, getpid(), start_time);
                 wait(NULL);
+
                 break;
             }
             
         }
         closedir(dir);
     }
+    
 }
 
 void print_process_info(){
     int pid = getpid();
-    fprintf(stderr, "\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
-    fprintf(stderr, "Do you want to terminate the program? (Y/N)\n");
-    if(getc(stdin) == 'Y')
-        exit(0);
+    char answer;
+    printf("\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
+    do{
+        printf("Do you want to terminate the program? (y/n)\n");
+        scanf("%c", &answer);
+        if(answer == 'n'){
+            
+            //writeLog(getpid(), SIGNAL_SENT, "SIGKILL : 0", &processData);
+            break;
+        }else if(answer == 'y')
+            exit(0);
+    }while(answer!= 'y' && answer != 'n');
+    
+        
 }
 
 void set_sig_action(){
@@ -175,9 +186,23 @@ void set_sig_action(){
 		perror ("sigaction");
 }
 
+
 int main(int argc, char** argv){
+    enum event ev = INIT;
+
     set_sig_action();
-    
+    if(getpgrp() == getpid()){
+        write_log(ev);
+        printf("get time\n");
+        if( gettimeofday(&start_time, NULL)){
+            fprintf(stderr, "Error getting time");
+            return 1;
+        }
+    }
+    ev = PROC_CREAT;
+    write_log(ev);
+
+
     if(argc < 2) return 1;
     struct stat fileStat;
     
@@ -199,15 +224,17 @@ int main(int argc, char** argv){
     mode_t mode = fileStat.st_mode;
     char mode_R = 45;
 
-    if(getpgrp() == getpid())//First process
-        xmod(pathname, &mode, modeStr);;
+    if(getpgrp() == getpid()){
+        //First process
+        xmod(pathname, &mode, modeStr);
+    }
     if((*option3 == mode_R) || (*option2 == mode_R) || (*option1 == mode_R)){
         //printf("%s   %i\n",pathname ,is_regular_file(pathname));
         //recursive_func(argc,argv);
         recursive_step(pathname, &mode, argc, argv);    
     }
-
-    //pause(); // Descomentando esta linha o program vai esperar por um sinal. Clicando Ctrl+C ele chama a função print_process_info() de signal_aux.c
+    ev = PROC_EXIT;
+    write_log(ev);
     return 0;
 }
 

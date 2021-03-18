@@ -6,12 +6,13 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include "./mode_t_aux.h"
+#include "./log.h"
 
 unsigned int nftot = 0, nfmod = 0;
 char* pathname = NULL;
+extern struct timeval start_time;
 
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode);
 
