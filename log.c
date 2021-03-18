@@ -1,4 +1,4 @@
-#include "log.h"
+#include "./log.h"
 
 char* events[] = {
     "PROC_CREAT",

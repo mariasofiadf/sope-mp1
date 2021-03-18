@@ -97,13 +97,7 @@ void xmod(const char *pathname, mode_t * mode, char* modeStr){
     }
 
     char info[256] = "";
-    sprintf(info, "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
-    /*strcat(info, pathname);
-    strcat(info, " ; ");
-    strcat(info, oldPerm);
-    strcat(info, " ; ");
-    strcat(info, newPerm);
-    */
+    snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
     write_log(ev, info);
     chmod(pathname, *mode);
 }
@@ -131,14 +125,12 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
         if(getpgrp() != getpid()) //Only children enter here
             xmod(pathname, mode, modeStr);
         DIR *dir = opendir(pathname); 
-        char next_pathname[256];
+        char next_pathname[1000];
         struct dirent *dp;
         while ((dp = readdir(dir)) != NULL){
             if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
                 continue; 
-            strcpy(next_pathname, pathname);
-            strcat(next_pathname, "/");
-            strcat(next_pathname, dp->d_name);
+            snprintf(next_pathname, sizeof(next_pathname) , "%s/%s", pathname,dp->d_name);
             
             argv[argc -1] = next_pathname;
             int fork_pid = fork();
@@ -182,8 +174,9 @@ void print_process_info(){
             
             //writeLog(getpid(), SIGNAL_SENT, "SIGKILL : 0", &processData);
             break;
-        }else if(answer == 'y')
+        }else if(answer == 'y'){
             exit(0);
+        }
     }while(answer!= 'y' && answer != 'n');
     
         
