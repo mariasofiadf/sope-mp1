@@ -20,7 +20,7 @@ enum event {
 struct timeval start_time;
 
 
-void write_log(enum event event);
+void write_log(enum event event, char* info);
 
 
 #endif  //LOG_H_

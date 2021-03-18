@@ -72,22 +72,39 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
     return 0;
 }
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
 void xmod(const char *pathname, mode_t * mode, char* modeStr){
-
     printf("PID:%d Current pathname: %s\n", getpid(), pathname);
     char first = modeStr[0];
-
+    enum event ev = FILE_MODF;
+    //Save old permisisons used in info
+    mode_t oldPerm = *mode;
+    oldPerm &= 01111;
+    
     if(first == '0'){
         *mode = strtol(modeStr,0,8);
     }
     else
     {
         //printf("Entered else\n");
+        
         struct modeInfo modeInfo;
         assembleModeInfo(modeStr, &modeInfo, mode);
         //printf("Final mode_t: %o\n", mode);
+        
     }
 
+    char info[256] = "";
+    sprintf(info, "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
+    /*strcat(info, pathname);
+    strcat(info, " ; ");
+    strcat(info, oldPerm);
+    strcat(info, " ; ");
+    strcat(info, newPerm);
+    */
+    write_log(ev, info);
     chmod(pathname, *mode);
 }
 
@@ -154,6 +171,9 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
 void print_process_info(){
     int pid = getpid();
     char answer;
+    enum event ev = SIGNAL_RECV;
+    char * info = "SIGINT";
+    write_log(ev, info);
     printf("\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
     do{
         printf("Do you want to terminate the program? (y/n)\n");
@@ -191,8 +211,11 @@ int main(int argc, char** argv){
     enum event ev = INIT;
 
     set_sig_action();
+    
     if(getpgrp() == getpid()){
-        write_log(ev);
+
+        write_log(ev, NULL);
+        //pause();
         printf("get time\n");
         if( gettimeofday(&start_time, NULL)){
             fprintf(stderr, "Error getting time");
@@ -200,7 +223,12 @@ int main(int argc, char** argv){
         }
     }
     ev = PROC_CREAT;
-    write_log(ev);
+    char info[256] = "";
+    for(int i = 0; i < argc; i++){
+        strcat(info, argv[i]);
+        strcat(info, " ");
+    }
+    write_log(ev, info);
 
 
     if(argc < 2) return 1;
@@ -234,7 +262,7 @@ int main(int argc, char** argv){
         recursive_step(pathname, &mode, argc, argv);    
     }
     ev = PROC_EXIT;
-    write_log(ev);
+    write_log(ev, info);
     return 0;
 }
 

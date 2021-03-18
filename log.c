@@ -8,14 +8,14 @@ char* events[] = {
     "FILE_MODF"};
 
 
-char* info[] = {
+char* infos[] = {
     "PROC_CREAT",
     "PROC_EXIT",
-    "SIGNAL_RECV",
+    "SIGINT",
     "SIGNAL_SENT",
     "FILE_MODF"};
 
-void write_log(enum event event){
+void write_log(enum event event, char* info){
     FILE* file;
     int pid = getpid();
     char* log_filename = getenv("LOG_FILENAME");
@@ -50,6 +50,7 @@ void write_log(enum event event){
     double time_diff = this_t - start_t;
 
     //instant ; pid ; action ; info
-    fprintf(file, "%f ; %d ; %s ; %s\n", time_diff, pid, events[event], info[event]);  
+    fprintf(file, "%f ; %d ; %s ; %s\n", time_diff, pid, events[event], info);  
     fclose(file);
 }
+
