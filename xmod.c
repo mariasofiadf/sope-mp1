@@ -113,7 +113,7 @@ int xmod(const char *pathname, mode_t * mode, char* modeStr){
             fprintf(stderr, "Error: Assemble Mode\n");
             return 1;
         }
-        //printf("mode: %o", *mode);
+
     }
     *mode = *mode & MASK_LAST_3_OCTAL_DIGITS;
 
@@ -138,8 +138,11 @@ int xmod(const char *pathname, mode_t * mode, char* modeStr){
         char info[256] = "";
         snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
         write_log((enum event) FILE_MODF, info);
-        chmod(pathname, *mode);
     }
+
+    //printf("path: %s\n", pathname);
+    //printf("mode: %o\n", *mode);
+    chmod(pathname, *mode);
     return 0;
 
 }
