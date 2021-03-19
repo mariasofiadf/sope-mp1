@@ -94,9 +94,6 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
     return 0;
 }
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <string.h>
 int xmod(const char *pathname, mode_t * mode, char* modeStr){
 
     char first_char = modeStr[0];
@@ -158,15 +155,81 @@ int is_regular_file(const char *pathname) {
     return 1;
 }
 
-void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
-    char* modeStr= argv[argc - 2];
-    if(getpgrp() != getpid()) //Only children enter here
-        xmod(pathname, mode, modeStr);
+
+
+int goint_to_change(const char *pathname, mode_t * mode, char* modeStr){
+    char first_char = modeStr[0];
+
+    //Save old permisisons used in info
+    mode_t oldPerm = *mode;
+
+    //mode_t MASK_LAST_3_OCTAL_DIGITS 0777u;
+    oldPerm = oldPerm & MASK_LAST_3_OCTAL_DIGITS;
+    
+    //if first_char == '0' it means that the mode to be set need no processings
+    if(first_char == '0'){
+        *mode = strtol(modeStr,0,8);
+    } else {
+        struct modeInfo modeInfo;
+        if(assembleModeInfo(modeStr, &modeInfo, mode)){
+            fprintf(stderr, "Error: Assemble Mode\n");
+            return 1;
+        }
+        //printf("mode: %o", *mode);
+    }
+    *mode = *mode & MASK_LAST_3_OCTAL_DIGITS;
+
+    return(oldPerm != *mode);
+}
+
+
+int count_nfmod(char* pathname, mode_t * mode, char* modeStr){
+    int count = 0;
+    if(goint_to_change(pathname, mode, modeStr))
+        count++;
     DIR *dir = opendir(pathname); 
     char next_pathname[1000];
     struct dirent *dp;
-    
-    
+    while ((dp = readdir(dir)) != NULL){
+        if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+            continue;
+        snprintf(next_pathname, sizeof(next_pathname) , "%s/%s", pathname,dp->d_name);
+        if(!is_regular_file(next_pathname))
+            count += count_nfmod(next_pathname, mode, modeStr);
+        else if (goint_to_change(next_pathname, mode, modeStr)) {
+            count++;
+        }
+    }
+    closedir(dir);
+    return count;
+}
+
+int count_nftot(char* pathname){
+    int count = 1;
+    DIR *dir = opendir(pathname); 
+    char next_pathname[1000];
+    struct dirent *dp;
+    while ((dp = readdir(dir)) != NULL){
+        if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+            continue;
+        snprintf(next_pathname, sizeof(next_pathname) , "%s/%s", pathname,dp->d_name);
+        if(!is_regular_file(next_pathname))
+            count += count_nftot(next_pathname);
+        else{
+            count++;
+        }
+    }
+    closedir(dir);
+    return count;
+}
+
+void recursive_step_folder(char* pathname, mode_t *mode, int argc, char** argv){
+    char* modeStr= argv[argc - 2];
+    DIR *dir = opendir(pathname); 
+    char next_pathname[1000];
+    struct dirent *dp;
+    if(getpgrp() != getpid()) //Only children enter here
+        xmod(pathname, mode, modeStr);
     while ((dp = readdir(dir)) != NULL){
         if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
             continue;
@@ -181,7 +244,6 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
             case 0:
                 // Child               
                 execv("./xmod", argv);
-                printf("Chegueiiii!");
                 break;
             case -1:
                 //Erro
@@ -194,7 +256,51 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
                     // close(pp[ReadEnd]);
                     // write(pp[WriteEnd], nftot, sizeof(nftot));
                     // close(pp[WriteEnd]);
+                }   
+                break;
+            }
+        }
+            
+    }
+        //xmod(pathname, mode, modeStr);
+    closedir(dir);  
+}
 
+void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
+    char* modeStr= argv[argc - 2];
+    DIR *dir = opendir(pathname); 
+    char next_pathname[1000];
+    struct dirent *dp;
+    /*
+    if(getpgrp() != getpid()) //Only children enter here
+        xmod(pathname, mode, modeStr);
+    */
+    while ((dp = readdir(dir)) != NULL){
+        if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+            continue;
+        snprintf(next_pathname, sizeof(next_pathname) , "%s/%s", pathname,dp->d_name);
+        argv[argc -1] = next_pathname;
+        if(is_regular_file(next_pathname)){
+            xmod(next_pathname, mode, modeStr);
+        } else {
+            int fork_pid = fork();
+            switch (fork_pid)
+            {
+            case 0:
+                // Child               
+                execv("./xmod", argv);
+                break;
+            case -1:
+                //Erro
+                printf("Erro");
+                break;
+            default: 
+                //Parent
+                while (wait(NULL) == 0) //Waits for child to be done
+                {
+                    // close(pp[ReadEnd]);
+                    // write(pp[WriteEnd], nftot, sizeof(nftot));
+                    // close(pp[WriteEnd]);
                 }   
                 break;
             }
@@ -309,12 +415,11 @@ int main(int argc, char** argv){
 
     if(stat(pathname, &fileStat) < 0)    
         return 1;
-
+    
     mode_t mode = fileStat.st_mode;
 
     if (getpgrp() == getpid()){
         if(xmod(pathname, &mode, modeStr)){
-            
             exit(0);
         }
     }
@@ -324,9 +429,12 @@ int main(int argc, char** argv){
 
     write_log((enum event) PROC_EXIT, info);
 
+
+    nftot = count_nftot(pathname);
+    nfmod = count_nfmod(pathname, &mode, modeStr);
     if (getpgrp() == getpid()){
         printf("nftot: %d\n", nftot);
-        printf("nfmod: %d\n", nftot);
+        printf("nfmod: %d\n", nfmod);
     }
 
     return 0;
