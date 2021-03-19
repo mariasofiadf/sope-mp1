@@ -14,6 +14,9 @@ unsigned int nftot = 0, nfmod = 0;
 char* pathname = NULL;
 extern struct timeval start_time;
 
+#define ReadEnd  0
+#define WriteEnd 1
+
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode);
 
 int xmod(const char *pathname, mode_t * mode, char* modeStr);

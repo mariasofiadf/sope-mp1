@@ -15,6 +15,51 @@ char* infos[] = {
     "SIGNAL_SENT",
     "FILE_MODF"};
 
+double time_starter() {
+        double result;
+        int env_value = 0;
+        char *old_env = NULL;
+        char *new_env = NULL;
+
+
+        if(getpgrp() == getpid()){
+            asprintf (&new_env, "%ld", (start_time.tv_usec/1000));
+            result = (double) *new_env;
+            setenv ("TIME_START", new_env, !0);
+            free (new_env);
+            printf("Set intial time\n");
+        }
+        else{
+            old_env = getenv("TIME_START");
+            if (NULL != old_env && 1 == sscanf (old_env, "%d", &env_value)) {
+                result = env_value;
+            }
+        }
+        return result;
+}
+
+void set_time_var(double time){
+    double result;
+    int env_value = 0;
+    char *new_env = NULL;
+    asprintf (&new_env, "%f", time);
+    setenv ("TIME_START", new_env, !0);
+    free (new_env);
+    //printf("Set intial time: %f\n", time);
+}
+
+double get_time_var() {
+    double result;
+    int env_value = 0;
+    char *env = NULL;
+    env = getenv("TIME_START");
+    if (NULL != env && 1 == sscanf (env, "%d", &env_value)) {
+        result = env_value;
+    }
+    //printf("Get initial time: %f\n", result);
+    return result/(double)1000;
+}
+
 void write_log(enum event event, char* info){
     FILE* file;
     int pid = getpid();
@@ -42,15 +87,20 @@ void write_log(enum event event, char* info){
         fprintf(stderr, "Error getting time");
         return;
     }
+    
     //Time diference in milliseconds
     //double start_t = ((double)start_time.tv_sec)*1000 + start_time.tv_usec/1000;
-    double start_t = start_time.tv_usec/1000;
+    //double start_t = time_starter();
+    //printf("start_t: %f\n", start_t);
     //double this_t = ((double)this_time.tv_sec)*1000 + this_time.tv_usec/1000;
-    double this_t = this_time.tv_usec/1000;
-    double time_diff = this_t - start_t;
+    double start_t =  get_time_var();
+    double this_t = this_time.tv_usec/((double)1000);
+    printf("start_t: %f\n", start_t);
+    printf("this_t: %f\n", this_t);
+    double time_diff = (this_t - start_t);
 
     //instant ; pid ; action ; info
     fprintf(file, "%f ; %d ; %s ; %s\n", time_diff, pid, events[event], info);  
     fclose(file);
-}
-
+} 
+   
