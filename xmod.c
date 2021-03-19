@@ -113,7 +113,6 @@ int xmod(const char *pathname, mode_t * mode, char* modeStr){
             fprintf(stderr, "Error: Assemble Mode\n");
             return 1;
         }
-        //printf("mode: %o", *mode);
     }
     *mode = *mode & MASK_LAST_3_OCTAL_DIGITS;
 
@@ -129,17 +128,16 @@ int xmod(const char *pathname, mode_t * mode, char* modeStr){
 
         //Increments number of files modified
         nfmod += 1;
-
         //If verbose_option or change_option is on, it prints files with changes
         if(verbose_option || change_option)
             printf("modo de %s alterado de %o para %o\n",pathname, oldPerm, *mode);
-
-        //Writes in the log if changes where made
-        char info[256] = "";
-        snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
-        write_log((enum event) FILE_MODF, info);
-        chmod(pathname, *mode);
     }
+    
+    //Writes in the log if changes where made
+    char info[256] = "";
+    snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
+    write_log((enum event) FILE_MODF, info);
+    chmod(pathname, *mode);
     return 0;
 
 }
@@ -271,10 +269,10 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
     DIR *dir = opendir(pathname); 
     char next_pathname[1000];
     struct dirent *dp;
-    /*
-    if(getpgrp() != getpid()) //Only children enter here
+    
+    if(getpgrp() != getpid() && !is_regular_file(pathname)) //Only children enter here
         xmod(pathname, mode, modeStr);
-    */
+    
     while ((dp = readdir(dir)) != NULL){
         if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
             continue;
