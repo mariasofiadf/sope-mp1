@@ -117,9 +117,9 @@ void xmod(const char *pathname, mode_t * mode, char* modeStr){
         char info[256] = "";
         snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
         write_log((enum event) FILE_MODF, info);
+        chmod(pathname, *mode);
     }
 
-    chmod(pathname, *mode);
 }
 
 ///Assembles modeInfo struct
