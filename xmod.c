@@ -270,10 +270,11 @@ int main(int argc, char** argv){
 
     mode_t mode = fileStat.st_mode;
 
-    if(recursive_option){
-        recursive_step(pathname, &mode, argc, argv);    
-    }   else if (getpgrp() == getpid()){
+    if (getpgrp() == getpid()){
         xmod(pathname, &mode, modeStr);
+    }
+    if(recursive_option){
+        recursive_step(pathname, &mode, argc, argv);   
     }
 
     write_log((enum event) PROC_EXIT, info);
