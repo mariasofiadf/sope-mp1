@@ -16,11 +16,11 @@ extern struct timeval start_time;
 
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode);
 
-void xmod(const char *pathname, mode_t * mode, char* modeStr, int mode_v_bool);
+void xmod(const char *pathname, mode_t * mode, char* modeStr);
 
 int is_regular_file(const char *pathname);
 
-void recursive_step(char* pathname, mode_t *mode, int argc, char** argv, int mode_v_bool);
+void recursive_step(char* pathname, mode_t *mode, int argc, char** argv);
 
 void print_process_info();
 

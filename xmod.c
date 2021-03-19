@@ -1,5 +1,7 @@
 #include "./xmod.h"
 
+u_int8_t change_option = 0, verbose_option = 0, recursive_option = 0;
+
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
     //printf("Assemblying Mode Info\n");
@@ -75,42 +77,49 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-void xmod(const char *pathname, mode_t * mode, char* modeStr, int mode_v_bool){
-    //printf("PID:%d Current pathname: %s\n", getpid(), pathname);
-    char first = modeStr[0];
-    enum event ev = FILE_MODF;
+void xmod(const char *pathname, mode_t * mode, char* modeStr){
+
+    char first_char = modeStr[0];
+
     //Save old permisisons used in info
     mode_t oldPerm = *mode;
+
     //mode_t MASK_LAST_3_OCTAL_DIGITS 0777u;
     oldPerm = oldPerm & MASK_LAST_3_OCTAL_DIGITS;
     
-    if(first == '0'){
+    //if first_char == '0' it means that the mode to be set need no processings
+    if(first_char == '0'){
         *mode = strtol(modeStr,0,8);
-    }
-    else
-    {
-        //printf("Entered else\n");
-        
+    } else {
         struct modeInfo modeInfo;
         assembleModeInfo(modeStr, &modeInfo, mode);
-        //printf("Final mode_t: %o\n", mode);
-        
     }
     *mode = *mode & MASK_LAST_3_OCTAL_DIGITS;
-    char info[256] = "";
-    snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
-    if (mode_v_bool) {
-        if (oldPerm == *mode) {
+
+    //Increments total number of files
+    nftot += 1;
+    
+    if(oldPerm == *mode){
+        //If vverbose_option is on, it prints files that didn't change
+        if(verbose_option)
             printf("modo de %s mantido como %o\n",pathname, *mode);
-        }
-        else {
+
+    } else {
+
+        //Increments number of files modified
+        nfmod += 1;
+
+        //If verbose_option or change_option is on, it prints files with changes
+        if(verbose_option || change_option)
             printf("modo de %s alterado de %o para %o\n",pathname, oldPerm, *mode);
-        }     
+
+        //Writes in the log if changes where made
+        char info[256] = "";
+        snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
+        write_log((enum event) FILE_MODF, info);
     }
 
-    write_log(ev, info);
     chmod(pathname, *mode);
-    
 }
 
 ///Assembles modeInfo struct
@@ -124,17 +133,17 @@ int is_regular_file(const char *pathname) {
     return 1;
 }
 
-void recursive_step(char* pathname, mode_t *mode, int argc, char** argv,int mode_v_bool){
+void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
     char* modeStr= argv[argc - 2];
     if(is_regular_file(pathname)){
         //printf("Current pathname: %s\n", pathname);
-        xmod(pathname, mode, modeStr, mode_v_bool);
+        xmod(pathname, mode, modeStr);
         return;
     }
     else
     {
         if(getpgrp() != getpid()) //Only children enter here
-            xmod(pathname, mode, modeStr, mode_v_bool);
+            xmod(pathname, mode, modeStr);
         DIR *dir = opendir(pathname); 
         char next_pathname[1000];
         struct dirent *dp;
@@ -149,7 +158,6 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv,int mode
             {
             case 0:
                 // Child
-                //printf("I'm a new process: %d\n", getpid());
                 execv("./xmod", argv);
                 break;
             case -1:
@@ -158,14 +166,11 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv,int mode
                 break;
             default: 
                 //Parent
-                //printf("I'm the parent: %d\n", getpid());
-                //writeLog(PROC_CREAT, getpid(), start_time);
                 wait(NULL);
-
                 break;
             }
-            
         }
+        //xmod(pathname, mode, modeStr);
         closedir(dir);
     }
     
@@ -174,16 +179,13 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv,int mode
 void print_process_info(){
     int pid = getpid();
     char answer;
-    enum event ev = SIGNAL_RECV;
     char * info = "SIGINT";
-    write_log(ev, info);
+    write_log((enum event) SIGNAL_RECV, info);
     printf("\n%d ; %s ; %d ; %d\n", pid, pathname, nftot, nfmod);
     do{
         printf("Do you want to terminate the program? (y/n)\n");
         scanf("%c", &answer);
         if(answer == 'n'){
-            
-            //writeLog(getpid(), SIGNAL_SENT, "SIGKILL : 0", &processData);
             break;
         }else if(answer == 'y'){
             exit(0);
@@ -195,8 +197,7 @@ void print_process_info(){
 
 void set_sig_action(){
 	struct sigaction new, old;
-	sigset_t smask;
-			// defines signals to block while func() is running
+	sigset_t smask; // defines signals to block while func() is running
 
 		// prepare struct sigaction
 	if (sigemptyset(&smask)==-1)	// block no signal
@@ -210,70 +211,72 @@ void set_sig_action(){
 		perror ("sigaction");
 }
 
+void check_options(int argc, char** argv){
+    for(int i = 1; i < argc - 2; i++)
+    {
+        if(!strcmp(argv[i], "-R"))
+            recursive_option = 1;
+        if(!strcmp(argv[i], "-v"))
+            verbose_option = 1;
+        if(!strcmp(argv[i], "-c"))
+            change_option = 1;
+    }
+}
+
+
+void argv_to_str(int argc, char**argv, char* str)
+{
+    for(int i = 0; i < argc; i++){
+        strcat(str, argv[i]);
+        strcat(str, " ");
+    }
+}
 
 int main(int argc, char** argv){
-    enum event ev = INIT;
 
+    //Prepares program to respond to SIGINT signal
     set_sig_action();
-    
-    if(getpgrp() == getpid()){
 
-        write_log(ev, NULL);
-        //pause();
-        printf("get time\n");
+    //Activates chosen options eg. verbose_option, change_option, recursive_option
+    check_options(argc, argv);
+
+    //For the parent process
+    if(getpgrp() == getpid()){
+        //Opens and clears log file
+        write_log((enum event)INIT, NULL);
+
+        //Saves start time of parent process
         if( gettimeofday(&start_time, NULL)){
             fprintf(stderr, "Error getting time");
             return 1;
         }
     }
-    ev = PROC_CREAT;
+
+    //String that will have the arguments
     char info[256] = "";
-    for(int i = 0; i < argc; i++){
-        strcat(info, argv[i]);
-        strcat(info, " ");
-    }
-    write_log(ev, info);
 
+    //Transforms argv into a string
+    argv_to_str(argc, argv, info);
 
-    if(argc < 2) return 1;
+    //Registers process creation on the logfile
+    write_log((enum event)PROC_CREAT, info);
+
     struct stat fileStat;
     
     char* modeStr = argv[argc - 2]; pathname = argv[argc - 1];
-    char* option1 = (argv[argc - 3]);
-    char* option2 = malloc(sizeof(char) * 1024);
-    char* option3 = malloc(sizeof(char) * 1024);
-    if (argc == 5) {
-        option2 = (argv[argc - 4]);
-    } else if (argc == 6) {
-        option2 = (argv[argc - 4]);
-        option3 = (argv[argc - 5]);
-    }
-    //printf("PID:%d Current pathname: %s\n", getpid(), pathname);
 
     if(stat(pathname, &fileStat) < 0)    
         return 1;
 
     mode_t mode = fileStat.st_mode;
-    char hyphen = 45;
-    char mode_R = 82;
-    char mode_v = 118;
-    int mode_v_bool = 0;
 
-    if(((*(option3) == hyphen) && (*(option3+1) ==  mode_v)) || ((*(option2) == hyphen) && (*(option2+1) ==  mode_v)) || ((*(option1) == hyphen) && (*(option1+1) ==  mode_v))){
-       mode_v_bool = 1;
+    if(recursive_option){
+        recursive_step(pathname, &mode, argc, argv);    
+    }   else if (getpgrp() == getpid()){
+        xmod(pathname, &mode, modeStr);
     }
-    
-    if(getpgrp() == getpid()){
-        //First process
-        xmod(pathname, &mode, modeStr, mode_v_bool);
-    }
-    if(((*(option3) == hyphen) && (*(option3+1) == mode_R)) || ((*(option2) == hyphen) && (*(option2+1) == mode_R)) || ((*(option1) == hyphen) && (*(option1+1) == mode_R))){
-        //printf("%s   %i\n",pathname ,is_regular_file(pathname));
-        //recursive_func(argc,argv);
-        recursive_step(pathname, &mode, argc, argv , mode_v_bool);    
-    }
-    ev = PROC_EXIT;
-    write_log(ev, info);
+
+    write_log((enum event) PROC_EXIT, info);
     return 0;
 }
 
