@@ -160,31 +160,24 @@ int is_regular_file(const char *pathname) {
 
 void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
     char* modeStr= argv[argc - 2];
-    if(is_regular_file(pathname)){
-        //printf("Current pathname: %s\n", pathname);
+    if(getpgrp() != getpid()) //Only children enter here
         xmod(pathname, mode, modeStr);
-        return;
-    }
-    else
-    {
-        if(getpgrp() != getpid()) //Only children enter here
-            xmod(pathname, mode, modeStr);
-        DIR *dir = opendir(pathname); 
-        char next_pathname[1000];
-        struct dirent *dp;
-        
-        while ((dp = readdir(dir)) != NULL){
-            if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
-                continue; 
-            snprintf(next_pathname, sizeof(next_pathname) , "%s/%s", pathname,dp->d_name);
-            
-            argv[argc -1] = next_pathname;
+    DIR *dir = opendir(pathname); 
+    char next_pathname[1000];
+    struct dirent *dp;
+    while ((dp = readdir(dir)) != NULL){
+        if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
+            continue;
+        snprintf(next_pathname, sizeof(next_pathname) , "%s/%s", pathname,dp->d_name);
+        argv[argc -1] = next_pathname;
+        if(is_regular_file(next_pathname)){
+            xmod(next_pathname, mode, modeStr);
+        } else {
             int fork_pid = fork();
-            printf("New process called!!!\n");
             switch (fork_pid)
             {
             case 0:
-                // Child
+                    // Child
                 execv("./xmod", argv);
                 break;
             case -1:
@@ -195,15 +188,16 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
                 //Parent
                 while (wait(NULL) == 0)
                 {
-                    /* code */
-                }
-                
+
+                }   
                 break;
             }
         }
-        //xmod(pathname, mode, modeStr);
-        closedir(dir);
+            
     }
+        //xmod(pathname, mode, modeStr);
+    closedir(dir);
+    
     
 }
 
