@@ -1,7 +1,6 @@
 #include "./xmod.h"
 
 u_int8_t change_option = 0, verbose_option = 0, recursive_option = 0;
-int pp[2];
 
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 
@@ -203,10 +202,10 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
             
     }
         //xmod(pathname, mode, modeStr);
-    closedir(dir);
-    
-    
+    closedir(dir);  
 }
+
+
 
 void print_process_info(){
     int pid = getpid();
@@ -269,6 +268,7 @@ void argv_to_str(int argc, char**argv, char* str)
 }
 
 
+
 int main(int argc, char** argv){
 
     //Prepares program to respond to SIGINT signal
@@ -292,14 +292,7 @@ int main(int argc, char** argv){
             fprintf(stderr, "Error getting time\n");
             return 1;
         }
-        set_time_var((double)start_time.tv_usec);
-        //time_starter();
     } 
-    else {
-        close(pp[1]);
-        read(pp[0], &nftot, 1024);
-        close(pp[0]);
-    }
 
     //String that will have the arguments
     char info[256] = "";
@@ -330,23 +323,10 @@ int main(int argc, char** argv){
     }
 
     write_log((enum event) PROC_EXIT, info);
-    int childMod;
-    if(pipe(pp) < 0)
-        printf("Pipe not open!\n");
+
     if (getpgrp() == getpid()){
-        while(wait(NULL) ==  0);
-        close(pp[WriteEnd]);
-        read(pp[ReadEnd], &childMod, sizeof(nftot));
-        close(pp[ReadEnd]);
-        printf("ChildMod: %d", childMod);
-        nfmod += childMod;
         printf("nftot: %d\n", nftot);
         printf("nfmod: %d\n", nftot);
-    }else{
-        printf("Sent pipe message!");
-        close(pp[ReadEnd]);
-        write(pp[WriteEnd], &nftot, sizeof(nftot));
-        close(pp[WriteEnd]);
     }
 
     return 0;

@@ -27,7 +27,7 @@ double time_starter() {
             result = (double) *new_env;
             setenv ("TIME_START", new_env, !0);
             free (new_env);
-            printf("Set intial time\n");
+            //printf("Set intial time\n");
         }
         else{
             old_env = getenv("TIME_START");
@@ -64,6 +64,11 @@ void write_log(enum event event, char* info){
     FILE* file;
     int pid = getpid();
     char* log_filename = getenv("LOG_FILENAME");
+    struct timeval this_time;
+    if( gettimeofday(&this_time, NULL)){
+        fprintf(stderr, "Error getting time");
+        return;
+    }
     if(log_filename == NULL){
         fprintf(stderr, "Error opening log file");
         return;
@@ -82,22 +87,22 @@ void write_log(enum event event, char* info){
         return;       
     }
     
-    struct timeval this_time;
-    if( gettimeofday(&this_time, NULL)){
-        fprintf(stderr, "Error getting time");
-        return;
-    }
+    double start_t;
+    double this_t;
+    double time_diff;
     
-    //Time diference in milliseconds
-    //double start_t = ((double)start_time.tv_sec)*1000 + start_time.tv_usec/1000;
-    //double start_t = time_starter();
-    //printf("start_t: %f\n", start_t);
-    //double this_t = ((double)this_time.tv_sec)*1000 + this_time.tv_usec/1000;
-    double start_t =  get_time_var();
-    double this_t = this_time.tv_usec/((double)1000);
-    printf("start_t: %f\n", start_t);
-    printf("this_t: %f\n", this_t);
-    double time_diff = (this_t - start_t);
+    //First process
+    if(getpgrp() == getpid() && event ==PROC_CREAT){
+        start_t = this_time.tv_usec;
+        this_t = this_time.tv_usec;
+        set_time_var(start_t);
+    }
+    else
+    {
+        start_t =  get_time_var();
+        this_t = this_time.tv_usec/((double)1000);
+        time_diff = (this_t - start_t);
+    }
 
     //instant ; pid ; action ; info
     fprintf(file, "%f ; %d ; %s ; %s\n", time_diff, pid, events[event], info);  

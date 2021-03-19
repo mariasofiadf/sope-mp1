@@ -1,6 +1,6 @@
-0.037000 ; 74301 ; PROC_CREAT ; ./xmod -R a=rwx ./pastadir 
-1.212000 ; 74302 ; PROC_CREAT ; ./xmod -R a=rwx ./pastadir/pasta2 
-2.768000 ; 74303 ; PROC_CREAT ; ./xmod -R a=rwx ./pastadir/pasta2/pasta3 
-3.010000 ; 74303 ; PROC_EXIT ; ./xmod -R a=rwx ./pastadir/pasta2/pasta3 
-3.365000 ; 74302 ; PROC_EXIT ; ./xmod -R a=rwx ./pastadir/pasta2 
-3.664000 ; 74301 ; PROC_EXIT ; ./xmod -R a=rwx ./pastadir 
+0.000000 ; 78667 ; PROC_CREAT ; ./xmod -R -v a=rwx ./pastadir 
+0.767000 ; 78668 ; PROC_CREAT ; ./xmod -R -v a=rwx ./pastadir/pasta2 
+1.364000 ; 78669 ; PROC_CREAT ; ./xmod -R -v a=rwx ./pastadir/pasta2/pasta3 
+1.513000 ; 78669 ; PROC_EXIT ; ./xmod -R -v a=rwx ./pastadir/pasta2/pasta3 
+1.726000 ; 78668 ; PROC_EXIT ; ./xmod -R -v a=rwx ./pastadir/pasta2 
+1.993000 ; 78667 ; PROC_EXIT ; ./xmod -R -v a=rwx ./pastadir 
