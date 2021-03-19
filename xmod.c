@@ -39,13 +39,12 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
             break;
     }
 
-    //HAVE TO VERIFY THAT THE ORDER IS CORRECT
-    int i= 2;
+
 
     //remove previous permissions
     if(modeInfo->symbol ==  SUBST){
         if(modeInfo->user == ALL)
-            *mode &= 0x111000;
+            *mode &= 0111000;
         else
         {
             *mode = mode_rm(*mode, modeInfo->user, WRITE);
@@ -54,19 +53,40 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
         }
     }
 
+        //HAVE TO VERIFY THAT THE ORDER IS CORRECT
+    int i= 2;
+    modeInfo->read = 0;
+    modeInfo->write = 0;
+    modeInfo->execute = 0;
     while(modeChar[i] != 0){ //not sure is the right condition
         switch (modeChar[i++])
 		{
 		case 'r':
-			*mode = change_perm(*mode, modeInfo->user, READ, modeInfo->symbol);
+            if((modeInfo->read || modeInfo->write || modeInfo->execute)){
+                fprintf(stderr, "Error: Wrong permission given (read)\n");
+                return 1;
+            }
+            *mode = change_perm(*mode, modeInfo->user, READ, modeInfo->symbol);
+            modeInfo->read = 1;
 			break;
 		case 'w':
-			*mode = change_perm(*mode, modeInfo->user, WRITE, modeInfo->symbol);
+            if(modeInfo->write || modeInfo->execute){
+                fprintf(stderr, "Error: Wrong permission given(write)\n");
+                return 1;
+            }
+            *mode =change_perm(*mode, modeInfo->user, WRITE, modeInfo->symbol);
+            modeInfo->write= 1;
 			break;
 		case 'x':
-			*mode = change_perm(*mode, modeInfo->user, EXECUTE, modeInfo->symbol);
+            if(modeInfo->execute){
+                fprintf(stderr, "Error: Wrong permission given(exe)\n");
+                return 1;
+            }
+			*mode =change_perm(*mode, modeInfo->user, EXECUTE, modeInfo->symbol);
+            modeInfo->execute = 1;
 			break;
 		default:
+            fprintf(stderr, "Error: Wrong permission given\n");
 			return 1;
 		}
     }
@@ -77,7 +97,7 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-void xmod(const char *pathname, mode_t * mode, char* modeStr){
+int xmod(const char *pathname, mode_t * mode, char* modeStr){
 
     char first_char = modeStr[0];
 
@@ -92,7 +112,11 @@ void xmod(const char *pathname, mode_t * mode, char* modeStr){
         *mode = strtol(modeStr,0,8);
     } else {
         struct modeInfo modeInfo;
-        assembleModeInfo(modeStr, &modeInfo, mode);
+        if(assembleModeInfo(modeStr, &modeInfo, mode)){
+            fprintf(stderr, "Error: Assemble Mode\n");
+            return 1;
+        }
+        printf("mode: %o", *mode);
     }
     *mode = *mode & MASK_LAST_3_OCTAL_DIGITS;
 
@@ -119,6 +143,7 @@ void xmod(const char *pathname, mode_t * mode, char* modeStr){
         write_log((enum event) FILE_MODF, info);
         chmod(pathname, *mode);
     }
+    return 0;
 
 }
 
@@ -147,6 +172,7 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
         DIR *dir = opendir(pathname); 
         char next_pathname[1000];
         struct dirent *dp;
+        
         while ((dp = readdir(dir)) != NULL){
             if(!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, ".."))
                 continue; 
@@ -154,6 +180,7 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
             
             argv[argc -1] = next_pathname;
             int fork_pid = fork();
+            printf("New process called!!!\n");
             switch (fork_pid)
             {
             case 0:
@@ -166,7 +193,11 @@ void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
                 break;
             default: 
                 //Parent
-                wait(NULL);
+                while (wait(NULL) == 0)
+                {
+                    /* code */
+                }
+                
                 break;
             }
         }
@@ -211,16 +242,20 @@ void set_sig_action(){
 		perror ("sigaction");
 }
 
-void check_options(int argc, char** argv){
+int check_options(int argc, char** argv){
     for(int i = 1; i < argc - 2; i++)
     {
         if(!strcmp(argv[i], "-R"))
             recursive_option = 1;
-        if(!strcmp(argv[i], "-v"))
+        else if(!strcmp(argv[i], "-v"))
             verbose_option = 1;
-        if(!strcmp(argv[i], "-c"))
+        else if(!strcmp(argv[i], "-c"))
             change_option = 1;
+        else {
+            return 1;
+        }
     }
+    return 0;
 }
 
 
@@ -238,7 +273,10 @@ int main(int argc, char** argv){
     set_sig_action();
 
     //Activates chosen options eg. verbose_option, change_option, recursive_option
-    check_options(argc, argv);
+    if(check_options(argc, argv)) {
+        fprintf(stderr, "Error Checking options\n");
+        return 1;
+    } 
 
     //For the parent process
     if(getpgrp() == getpid()){
@@ -247,7 +285,7 @@ int main(int argc, char** argv){
 
         //Saves start time of parent process
         if( gettimeofday(&start_time, NULL)){
-            fprintf(stderr, "Error getting time");
+            fprintf(stderr, "Error getting time\n");
             return 1;
         }
     }
@@ -271,13 +309,22 @@ int main(int argc, char** argv){
     mode_t mode = fileStat.st_mode;
 
     if (getpgrp() == getpid()){
-        xmod(pathname, &mode, modeStr);
+        if(xmod(pathname, &mode, modeStr)){
+            
+            exit(0);
+        }
     }
     if(recursive_option){
         recursive_step(pathname, &mode, argc, argv);   
     }
 
     write_log((enum event) PROC_EXIT, info);
+
+    if (getpgrp() == getpid()){
+        printf("nftot: %d\n", nftot);
+        printf("nfmod: %d\n", nftot);
+    }
+
     return 0;
 }
 
