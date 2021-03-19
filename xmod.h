@@ -1,6 +1,6 @@
 #ifndef XMOD_H_
 #define XMOD_H_
-
+#define MASK_LAST_3_OCTAL_DIGITS 0777u;
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,11 +16,11 @@ extern struct timeval start_time;
 
 int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode);
 
-void xmod(const char *pathname, mode_t * mode, char* modeStr);
+void xmod(const char *pathname, mode_t * mode, char* modeStr, int mode_v_bool);
 
 int is_regular_file(const char *pathname);
 
-void recursive_step(char* pathname, mode_t *mode, int argc, char** argv);
+void recursive_step(char* pathname, mode_t *mode, int argc, char** argv, int mode_v_bool);
 
 void print_process_info();
 

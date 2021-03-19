@@ -75,13 +75,14 @@ int assembleModeInfo(char* modeChar, struct modeInfo* modeInfo, mode_t* mode){
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-void xmod(const char *pathname, mode_t * mode, char* modeStr){
-    printf("PID:%d Current pathname: %s\n", getpid(), pathname);
+void xmod(const char *pathname, mode_t * mode, char* modeStr, int mode_v_bool){
+    //printf("PID:%d Current pathname: %s\n", getpid(), pathname);
     char first = modeStr[0];
     enum event ev = FILE_MODF;
     //Save old permisisons used in info
     mode_t oldPerm = *mode;
-    oldPerm &= 01111;
+    //mode_t MASK_LAST_3_OCTAL_DIGITS 0777u;
+    oldPerm = oldPerm & MASK_LAST_3_OCTAL_DIGITS;
     
     if(first == '0'){
         *mode = strtol(modeStr,0,8);
@@ -95,11 +96,21 @@ void xmod(const char *pathname, mode_t * mode, char* modeStr){
         //printf("Final mode_t: %o\n", mode);
         
     }
-
+    *mode = *mode & MASK_LAST_3_OCTAL_DIGITS;
     char info[256] = "";
     snprintf(info, sizeof(info), "%s ; 0%o ; 0%o", pathname, oldPerm, *mode);
+    if (mode_v_bool) {
+        if (oldPerm == *mode) {
+            printf("modo de %s mantido como %o\n",pathname, *mode);
+        }
+        else {
+            printf("modo de %s alterado de %o para %o\n",pathname, oldPerm, *mode);
+        }     
+    }
+
     write_log(ev, info);
     chmod(pathname, *mode);
+    
 }
 
 ///Assembles modeInfo struct
@@ -113,17 +124,17 @@ int is_regular_file(const char *pathname) {
     return 1;
 }
 
-void recursive_step(char* pathname, mode_t *mode, int argc, char** argv){
+void recursive_step(char* pathname, mode_t *mode, int argc, char** argv,int mode_v_bool){
     char* modeStr= argv[argc - 2];
     if(is_regular_file(pathname)){
         //printf("Current pathname: %s\n", pathname);
-        xmod(pathname, mode, modeStr);
+        xmod(pathname, mode, modeStr, mode_v_bool);
         return;
     }
     else
     {
         if(getpgrp() != getpid()) //Only children enter here
-            xmod(pathname, mode, modeStr);
+            xmod(pathname, mode, modeStr, mode_v_bool);
         DIR *dir = opendir(pathname); 
         char next_pathname[1000];
         struct dirent *dp;
@@ -243,16 +254,23 @@ int main(int argc, char** argv){
         return 1;
 
     mode_t mode = fileStat.st_mode;
-    char mode_R = 45;
+    char hyphen = 45;
+    char mode_R = 82;
+    char mode_v = 118;
+    int mode_v_bool = 0;
 
+    if(((*(option3) == hyphen) && (*(option3+1) ==  mode_v)) || ((*(option2) == hyphen) && (*(option2+1) ==  mode_v)) || ((*(option1) == hyphen) && (*(option1+1) ==  mode_v))){
+       mode_v_bool = 1;
+    }
+    
     if(getpgrp() == getpid()){
         //First process
-        xmod(pathname, &mode, modeStr);
+        xmod(pathname, &mode, modeStr, mode_v_bool);
     }
-    if((*option3 == mode_R) || (*option2 == mode_R) || (*option1 == mode_R)){
+    if(((*(option3) == hyphen) && (*(option3+1) == mode_R)) || ((*(option2) == hyphen) && (*(option2+1) == mode_R)) || ((*(option1) == hyphen) && (*(option1+1) == mode_R))){
         //printf("%s   %i\n",pathname ,is_regular_file(pathname));
         //recursive_func(argc,argv);
-        recursive_step(pathname, &mode, argc, argv);    
+        recursive_step(pathname, &mode, argc, argv , mode_v_bool);    
     }
     ev = PROC_EXIT;
     write_log(ev, info);
